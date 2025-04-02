@@ -39,17 +39,23 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/WEBBANHANG/product">Sản phẩm</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/WEBBANHANG/category">Danh mục</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/WEBBANHANG/cart">
-                            <i class="fas fa-shopping-cart"></i> Giỏ hàng
-                            <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
-                                <span class="badge bg-danger"><?= count($_SESSION['cart']) ?></span>
-                            <?php endif; ?>
-                        </a>
-                    </li>
+                    
+                    <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/WEBBANHANG/category">Danh mục</a>
+                        </li>
+                    <?php endif; ?>
+                    
+                    <?php if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/WEBBANHANG/cart">
+                                <i class="fas fa-shopping-cart"></i> Giỏ hàng
+                                <?php if (isset($_SESSION['cart']) && count($_SESSION['cart']) > 0): ?>
+                                    <span class="badge bg-danger"><?= count($_SESSION['cart']) ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 <ul class="navbar-nav">
                     <?php if (isset($_SESSION['username'])): ?>
@@ -59,6 +65,9 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="/WEBBANHANG/account/profile">Hồ sơ</a></li>
+                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                    <li><a class="dropdown-item" href="/WEBBANHANG/admin">Quản trị</a></li>
+                                <?php endif; ?>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="/WEBBANHANG/account/logout">Đăng xuất</a></li>
                             </ul>

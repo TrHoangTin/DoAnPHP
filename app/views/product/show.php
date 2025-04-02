@@ -43,11 +43,11 @@
                         </div>
                         
                         <div class="mb-4">
-                            <h5 class="text-muted">Mô tả sản phẩm</h5>
+                            <h5 class="text-muted" >Mô tả sản phẩm</h5>
                             <p class="card-text"><?= nl2br(htmlspecialchars($product->description)) ?></p>
                         </div>
                         
-                        <div class="d-flex flex-wrap gap-2 mb-4">
+                        <!-- <div class="d-flex flex-wrap gap-2 mb-4">
                             <div class="border p-2 rounded">
                                 <small class="text-muted">Danh mục</small>
                                 <div><?= htmlspecialchars($product->category_name ?? 'Không có') ?></div>
@@ -56,7 +56,7 @@
                                 <small class="text-muted">Mã sản phẩm</small>
                                 <div>#<?= $product->id ?></div>
                             </div>
-                        </div>
+                        </div> -->
                         
                         <div class="d-flex gap-2">
                             <?php if (SessionHelper::isAdmin()): ?>

@@ -1,11 +1,16 @@
-<?php include __DIR__ . '/../shares/header.php'; ?>
+<?php 
+require_once __DIR__ . '/../../helpers/SessionHelper.php';
+include __DIR__ . '/../shares/header.php'; 
+?>
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Quản lý Danh mục</h1>
-        <a href="/WEBBANHANG/category/add" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>Thêm Danh mục
-        </a>
+        <?php if (SessionHelper::isAdmin()): ?>
+            <a href="/WEBBANHANG/category/add" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Thêm Danh mục
+            </a>
+        <?php endif; ?>
     </div>
 
     <!-- Hiển thị thông báo -->
@@ -35,14 +40,15 @@
                             <th width="50">ID</th>
                             <th>Tên Danh mục</th>
                             <th>Mô tả</th>
-                            <th>Số sản phẩm</th>
-                            <th width="120">Thao tác</th>
+                            <?php if (SessionHelper::isAdmin()): ?>
+                                <th width="120">Thao tác</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($categories)): ?>
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Không có danh mục nào</td>
+                                <td colspan="<?= SessionHelper::isAdmin() ? 4 : 3 ?>" class="text-center text-muted py-4">Không có danh mục nào</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($categories as $category): ?>
@@ -50,22 +56,23 @@
                                 <td><?= $category->id ?></td>
                                 <td><?= htmlspecialchars($category->name) ?></td>
                                 <td><?= htmlspecialchars($category->description ?? 'Không có mô tả') ?></td>
-                                <td><?= $category->product_count ?? 0 ?></td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="/WEBBANHANG/category/edit/<?= $category->id ?>" 
-                                           class="btn btn-outline-primary"
-                                           title="Sửa">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="/WEBBANHANG/category/delete/<?= $category->id ?>" 
-                                           class="btn btn-outline-danger" 
-                                           title="Xóa"
-                                           onclick="return confirm('Bạn có chắc muốn xóa danh mục này?')">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </a>
-                                    </div>
-                                </td>
+                                <?php if (SessionHelper::isAdmin()): ?>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="/WEBBANHANG/category/edit/<?= $category->id ?>" 
+                                               class="btn btn-outline-primary"
+                                               title="Sửa">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="/WEBBANHANG/category/delete/<?= $category->id ?>" 
+                                               class="btn btn-outline-danger" 
+                                               title="Xóa"
+                                               onclick="return confirm('Bạn có chắc muốn xóa danh mục này?')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                <?php endif; ?>
                             </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
