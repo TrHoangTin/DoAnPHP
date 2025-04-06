@@ -14,7 +14,20 @@ class ProductController {
     }
 
     public function index() {
-        $products = $this->productModel->getProducts();
+        $limit = 10; // Số sản phẩm mỗi trang
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Lấy trang hiện tại từ query string
+        $offset = ($page - 1) * $limit; // Tính toán offset
+
+        // Lấy sản phẩm phân trang
+        $search = $_GET['search'] ?? null;
+        $category_id = $_GET['category'] ?? null;
+
+        $data = $this->productModel->getPaginatedProducts($page, $limit, $category_id, $search);
+        
+        $products = $data['products']; // Sản phẩm phân trang
+        $total = $data['total']; // Tổng số sản phẩm
+        $totalPages = ceil($total / $limit); // Tính số trang
+
         require_once __DIR__ . '/../views/product/list.php';
     }
 

@@ -35,7 +35,7 @@
                 <td class="text-center">
                     <?php if ($product->image): ?>
                     <img src="<?= $product->image ?>" style="max-height: 70px; display: block; margin: auto;">
-                <?php endif; ?>
+                    <?php endif; ?>
                 </td>
                 <td><?= htmlspecialchars($product->category_name ?? 'Không có') ?></td>
                 <td>
@@ -62,6 +62,19 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+
+    <!-- Phân trang -->
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                    <a class="page-link" href="/webbanhang/product?page=<?= $i ?>&category=<?= $category_id ?>&search=<?= htmlspecialchars($search) ?>">
+                        <?= $i ?>
+                    </a>
+                </li>
+            <?php endfor; ?>
+        </ul>
+    </nav>
 </div>
 
 <?php include __DIR__ . '/../shares/footer.php'; ?>

@@ -55,12 +55,8 @@ class CategoryController {
         }
 
         require_once __DIR__ . '/../views/category/add.php';
-
-
-
     }
     
-
     public function edit($id) {
         if (!SessionHelper::isAdmin()) {
             SessionHelper::setFlash('error_message', 'Bạn không có quyền truy cập');

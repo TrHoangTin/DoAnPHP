@@ -25,11 +25,17 @@
                             <td>#<?= $order->id ?></td>
                             <td><?= date('d/m/Y H:i', strtotime($order->created_at)) ?></td>
                             <td><?= htmlspecialchars($order->status ?? 'Đang xử lý') ?></td>
-                            <td><?= number_format($order->total_amount, 0, ',', '.') ?>₫</td>
                             <td>
-                                <a href="/webbanhang/account/orderdetail/<?= $order->id ?>" class="btn btn-sm btn-info">
-                                    Xem chi tiết
-                                </a>
+    <?php
+    // Kiểm tra nếu total không phải là null
+    $total = isset($order->total) ? $order->total : 0;
+    echo number_format($total, 0, ',', '.') . '₫';
+    ?>
+</td>
+                            <td>
+                            <a href="/webbanhang/account/orderdetail/<?= $order->id ?>" class="btn btn-sm btn-info">
+    Xem chi tiết
+</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

@@ -145,4 +145,28 @@ class AccountController {
 
         require_once __DIR__ . '/../views/account/orders.php';
     }
+    
+    public function orderDetail($order_id) {
+        if (!SessionHelper::isLoggedIn()) {
+            header('Location: /webbanhang/account/login');
+            exit();
+        }
+    
+        $orderModel = new OrderModel((new Database())->getConnection());
+        
+        // Lấy thông tin đơn hàng
+        $order = $orderModel->getOrderById($order_id);
+        
+        // Kiểm tra đơn hàng có thuộc về người dùng hiện tại không
+        if (!$order || $order->account_id != SessionHelper::getUserId()) {
+            SessionHelper::setFlash('error_message', 'Đơn hàng không tồn tại hoặc không thuộc về bạn');
+            header('Location: /webbanhang/account/orders');
+            exit();
+        }
+    
+        // Lấy chi tiết đơn hàng
+        $orderDetails = $orderModel->getOrderDetails($order_id);
+    
+        require_once __DIR__ . '/../views/account/orderdetail.php';
+    }
 }
