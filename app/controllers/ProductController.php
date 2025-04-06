@@ -31,13 +31,57 @@ class ProductController {
         require_once __DIR__ . '/../views/product/list.php';
     }
 
+    // public function show($id) {
+    //     $product = $this->productModel->getProductById($id);
+    //     if (!$product) {
+    //         SessionHelper::setFlash('error_message', 'Sản phẩm không tồn tại');
+    //         header('Location: /webbanhang/product');
+    //         exit();
+    //     }
+    //     require_once __DIR__ . '/../views/product/show.php';
+    // }
+
     public function show($id) {
-        $product = $this->productModel->getProductById($id);
+        $db = (new Database())->getConnection();
+        $productModel = new ProductModel($db);
+        $reviewModel = new ProductReviewModel($db);
+    
+        // Xử lý submit đánh giá
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rating'])) {
+            if (!SessionHelper::isLoggedIn()) {
+                SessionHelper::setFlash('error_message', 'Vui lòng đăng nhập để đánh giá');
+                header("Location: /webbanhang/account/login?return=" . urlencode($_SERVER['REQUEST_URI']));
+                exit;
+            }
+    
+            $data = [
+                'product_id' => $id,
+                'account_id' => SessionHelper::getUserId(),
+                'rating' => (int)$_POST['rating'],
+                'comment' => $_POST['comment'] ?? ''
+            ];
+    
+            if ($reviewModel->addReview($data)) {
+                SessionHelper::setFlash('success_message', 'Đánh giá thành công!');
+            } else {
+                SessionHelper::setFlash('error_message', 'Lỗi khi gửi đánh giá');
+            }
+    
+            header("Location: /webbanhang/product/show/$id");
+            exit;
+        }
+    
+        // Lấy dữ liệu sản phẩm và đánh giá
+        $product = $productModel->getProductById($id);
         if (!$product) {
             SessionHelper::setFlash('error_message', 'Sản phẩm không tồn tại');
             header('Location: /webbanhang/product');
-            exit();
+            exit;
         }
+    
+        $reviews = $reviewModel->getReviewsByProduct($id);
+        $averageRating = $reviewModel->getAverageRating($id);
+    
         require_once __DIR__ . '/../views/product/show.php';
     }
 

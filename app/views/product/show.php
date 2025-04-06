@@ -4,7 +4,16 @@ include __DIR__ . '/../shares/header.php';
 
 // Khởi tạo kết nối database và model
 $db = (new Database())->getConnection();
+$productModel = new ProductModel($db);
 $reviewModel = new ProductReviewModel($db);
+
+// Lấy thông tin sản phẩm
+$product = $productModel->getProductById($id);
+if (!$product) {
+    SessionHelper::setFlash('error_message', 'Sản phẩm không tồn tại');
+    header('Location: /webbanhang/product');
+    exit();
+}
 
 // Lấy thông tin đánh giá
 $ratingInfo = $reviewModel->getAverageRating($product->id);
@@ -20,13 +29,14 @@ if (SessionHelper::isLoggedIn()) {
 ?>
 
 <div class="container mt-4">
+    <!-- Nút quay lại -->
     <a href="/webbanhang/product" class="btn btn-secondary mb-3">
         <i class="fas fa-arrow-left"></i> Quay lại danh sách
     </a>
     
+    <!-- Thông tin sản phẩm -->
     <div class="card mb-4">
         <div class="row g-0">
-            <!-- Phần hiển thị ảnh -->
             <?php if (!empty($product->image)): ?>
                 <div class="col-md-5">
                     <img src="<?= strpos($product->image, '/webbanhang/') === 0 ? $product->image : '/webbanhang/' . ltrim($product->image, '/') ?>" 
@@ -57,17 +67,6 @@ if (SessionHelper::isLoggedIn()) {
                             <h5 class="text-muted">Mô tả sản phẩm</h5>
                             <p class="card-text"><?= nl2br(htmlspecialchars($product->description)) ?></p>
                         </div>
-                        
-                        <!-- <div class="d-flex flex-wrap gap-2 mb-4">
-                            <div class="border p-2 rounded">
-                                <small class="text-muted">Danh mục</small>
-                                <div><?= htmlspecialchars($product->category_name ?? 'Không có') ?></div>
-                            </div>
-                            <div class="border p-2 rounded">
-                                <small class="text-muted">Mã sản phẩm</small>
-                                <div>#<?= $product->id ?></div>
-                            </div>
-                        </div> -->
                         
                         <div class="d-flex gap-2">
                             <?php if (SessionHelper::isAdmin()): ?>
@@ -105,7 +104,7 @@ if (SessionHelper::isLoggedIn()) {
             </div>
         </div>
         
-        <!-- Nút hành động -->
+        <!-- Form đánh giá hoặc thông báo -->
         <div class="mb-3">
             <?php if(SessionHelper::isLoggedIn()): ?>
                 <?php if ($userReview): ?>
@@ -117,19 +116,34 @@ if (SessionHelper::isLoggedIn()) {
                         </a>
                     </div>
                 <?php else: ?>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#reviewModal">
-                        <i class="fas fa-edit me-2"></i>Viết đánh giá
-                    </button>
+                    <form method="POST" action="/webbanhang/product/show/<?= $product->id ?>">
+                        <div class="mb-3">
+                            <label class="form-label">Đánh giá của bạn</label>
+                            <div class="rating-stars">
+                                <?php for ($i = 5; $i >= 1; $i--): ?>
+                                    <input type="radio" id="star<?= $i ?>" name="rating" value="<?= $i ?>" <?= $i == 5 ? 'checked' : '' ?>>
+                                    <label for="star<?= $i ?>"><i class="fas fa-star"></i></label>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="comment" class="form-label">Nhận xét</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                    </form>
                 <?php endif; ?>
             <?php else: ?>
                 <a href="/webbanhang/account/login?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" 
-                   class="btn btn-primary btn-sm">
+                   class="btn btn-primary">
                     <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập để đánh giá
                 </a>
             <?php endif; ?>
                 
-            <a href="/webbanhang/product/<?= $product->id ?>/reviews" class="btn btn-outline-primary btn-sm ms-2">
-                <i class="fas fa-list me-2"></i>Xem tất cả
+            <a href="/webbanhang/product/<?= $product->id ?>/reviews" class="btn btn-outline-primary mt-2">
+                <i class="fas fa-list me-2"></i>Xem tất cả đánh giá
             </a>
         </div>
         
@@ -173,82 +187,58 @@ if (SessionHelper::isLoggedIn()) {
         <?php endif; ?>
     </div>
 </div>
-
-<!-- Modal viết đánh giá -->
-<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Viết đánh giá</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="quickReviewForm">
-                <div class="modal-body">
-                    <input type="hidden" name="product_id" value="<?= $product->id ?>">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Đánh giá của bạn</label>
-                        <div class="rating-stars">
-                            <?php for ($i = 5; $i >= 1; $i--): ?>
-                                <input type="radio" id="quickStar<?= $i ?>" name="rating" value="<?= $i ?>" <?= $i == 5 ? 'checked' : '' ?>>
-                                <label for="quickStar<?= $i ?>"><i class="fas fa-star"></i></label>
-                            <?php endfor; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="quickComment" class="form-label">Nhận xét</label>
-                        <textarea class="form-control" id="quickComment" name="comment" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
-$('#quickReviewForm').submit(async function(e) {
+$('#reviewForm').submit(async function(e) {
     e.preventDefault();
     
     try {
-        const response = await fetch(`/webbanhang/api/products/<?= $product->id ?>/reviews`, {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            window.location.href = '/webbanhang/account/login?return=' + encodeURIComponent(window.location.pathname);
+            return;
+        }
+
+        const response = await fetch(`/api/products/<?= $product->id ?>/reviews`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json' // Yêu cầu server trả về JSON
             },
             body: JSON.stringify({
                 rating: $('input[name="rating"]:checked').val(),
-                comment: $('#quickComment').val()
+                comment: $('#comment').val()
             })
         });
 
-        // Kiểm tra response
+        // Kiểm tra content-type trước khi parse JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
-            throw new Error(`Invalid response: ${text.substring(0, 100)}`);
+            throw new Error(`Server trả về không phải JSON: ${text.substring(0, 100)}...`);
         }
 
         const data = await response.json();
-        
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Request failed');
+
+        if (!response.ok) {
+            // Xử lý lỗi từ API
+            if (response.status === 401) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/webbanhang/account/login';
+                return;
+            }
+            throw new Error(data.message || `Lỗi HTTP: ${response.status}`);
         }
 
-        // Thành công
-        toastr.success(data.message);
+        toastr.success(data.message || 'Đánh giá thành công!');
         setTimeout(() => location.reload(), 1500);
 
     } catch (error) {
         console.error('Review error:', error);
-        toastr.error(error.message);
+        toastr.error(error.message || 'Có lỗi xảy ra khi gửi đánh giá');
     }
 });
+
 </script>
 <style>
 .rating-stars {

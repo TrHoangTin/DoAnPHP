@@ -8,15 +8,15 @@ class ProductReviewModel {
     }
 
     public function addReview($data) {
-        $query = "INSERT INTO {$this->table} 
-                 (product_id, account_id, rating, comment) 
-                 VALUES (:product_id, :account_id, :rating, :comment)";
+        $query = "INSERT INTO product_reviews 
+                  (product_id, account_id, rating, comment) 
+                  VALUES (:product_id, :account_id, :rating, :comment)";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':product_id', (int)$data['product_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':account_id', (int)$data['account_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':rating', (int)$data['rating'], PDO::PARAM_INT);
-        $stmt->bindValue(':comment', $data['comment'], PDO::PARAM_STR);
+        $stmt->bindParam(':product_id', $data['product_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':account_id', $data['account_id'], PDO::PARAM_INT);
+        $stmt->bindParam(':rating', $data['rating'], PDO::PARAM_INT);
+        $stmt->bindParam(':comment', $data['comment'], PDO::PARAM_STR);
         
         return $stmt->execute();
     }

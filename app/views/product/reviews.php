@@ -102,31 +102,58 @@ include __DIR__ . '/../shares/header.php';
 </div>
 
 <script>
-$(document).ready(function() {
-    $('#reviewForm').submit(function(e) {
-        e.preventDefault();
-        
-        const formData = {
-            rating: $('input[name="rating"]:checked').val(),
-            comment: $('#comment').val()
-        };
-        
-        $.ajax({
-            url: '/webbanhang/api/products/<?= $productId ?>/reviews',
+async function submitReview() {
+    try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            window.location.href = '/webbanhang/account/login';
+            return;
+        }
+
+        const response = await fetch(`/api/products/<?= $product->id ?>/reviews`, {
             method: 'POST',
-            data: formData,
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    alert(response.message || 'Có lỗi xảy ra');
-                }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json' // Yêu cầu server chỉ trả về JSON
             },
-            error: function() {
-                alert('Có lỗi xảy ra khi gửi đánh giá');
-            }
+            body: JSON.stringify({
+                rating: $('input[name="rating"]:checked').val(),
+                comment: $('#comment').val()
+            })
         });
-    });
+
+        // 🔥 Quan trọng: Kiểm tra Content-Type trước khi parse JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const errorText = await response.text();
+            throw new Error(`Server trả về HTML thay vì JSON: ${errorText.substring(0, 100)}`);
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/webbanhang/account/login';
+                return;
+            }
+            throw new Error(data.message || 'Lỗi từ server');
+        }
+
+        toastr.success('Đánh giá thành công!');
+        setTimeout(() => location.reload(), 1500);
+
+    } catch (error) {
+        console.error('Lỗi khi gửi đánh giá:', error);
+        toastr.error(error.message || 'Lỗi không xác định');
+    }
+}
+
+// Gắn sự kiện submit
+$('#reviewForm').submit((e) => {
+    e.preventDefault();
+    submitReview();
 });
 </script>
 

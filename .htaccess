@@ -4,3 +4,12 @@ RewriteBase /webbanhang/
 # Redirect to public folder
 RewriteRule ^$ public/ [L]
 RewriteRule (.*) public/$1 [L]
+
+
+# Bỏ qua các request bắt đầu bằng /api/
+RewriteRule ^api/ - [L]
+
+# Các rewrite rules khác
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]

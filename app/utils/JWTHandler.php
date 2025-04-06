@@ -13,9 +13,10 @@ class JWTHandler {
     private $expire_after = 3600; // 1 hour
 
     public function __construct() {
-        $this->secret_key = getenv('JWT_SECRET') ?: 'HUTECH_SECURE_KEY_!@#$%^&*()';
+        $this->secretKey = 'your-secret-key-at-least-32-chars'; // Thay bằng key mạnh
+        $this->algorithm = 'HS256';
+        $this->tokenExpireTime = 3600; // 1 giờ
     }
-
     public function encode(array $data): string {
         $issued_at = time();
         $expire = $issued_at + $this->expire_after;
@@ -33,17 +34,14 @@ class JWTHandler {
 
     public function decode(string $jwt): ?array {
         try {
-            $decoded = JWT::decode($jwt, new Key($this->secret_key, $this->algorithm));
-            return (array) $decoded->data;
-        } catch (ExpiredException $e) {
-            error_log("JWT Expired: " . $e->getMessage());
-            return null;
-        } catch (SignatureInvalidException $e) {
-            error_log("Invalid JWT Signature: " . $e->getMessage());
-            return null;
+            $decoded = JWT::decode($token, $this->secretKey, [$this->algorithm]);
+            return (array) $decoded;
+        } catch (Firebase\JWT\ExpiredException $e) {
+            // Token hết hạn
+            throw new Exception('Token đã hết hạn');
         } catch (Exception $e) {
-            error_log("JWT Error: " . $e->getMessage());
-            return null;
+            // Các lỗi khác
+            throw new Exception('Token không hợp lệ');
         }
     }
 

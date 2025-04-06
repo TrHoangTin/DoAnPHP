@@ -1,72 +1,119 @@
 <?php
-class ProductReviewModel {
-    private $conn;
-    private $table = 'product_reviews';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/ProductReviewModel.php';
+require_once __DIR__ . '/../utils/JWTHandler.php';
+require_once __DIR__ . '/../helpers/SessionHelper.php';
 
-    public function __construct($db) {
-        $this->conn = $db;
+class ProductReviewController {
+    private $reviewModel;
+    private $jwtHandler;
+
+    public function __construct() {
+        $this->reviewModel = new ProductReviewModel((new Database())->getConnection());
+        $this->jwtHandler = new JWTHandler();
     }
 
-    public function addReview($data) {
-        $query = "INSERT INTO {$this->table} 
-                 (product_id, account_id, rating, comment) 
-                 VALUES (:product_id, :account_id, :rating, :comment)";
+    // Middleware xác thực JWT
+    private function authenticate() {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? '';
         
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':product_id', (int)$data['product_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':account_id', (int)$data['account_id'], PDO::PARAM_INT);
-        $stmt->bindValue(':rating', (int)$data['rating'], PDO::PARAM_INT);
-        $stmt->bindValue(':comment', $data['comment'], PDO::PARAM_STR);
+        // Kiểm tra tồn tại header Authorization
+        if (empty($authHeader)) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Authorization header is missing']);
+            exit;
+        }
+    
+        // Kiểm tra định dạng Bearer token
+        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Token không đúng định dạng']);
+            exit;
+        }
+    
+        $token = $matches[1];
         
-        return $stmt->execute();
+        try {
+            $decoded = $this->jwtHandler->decode($token);
+            
+            if (!$decoded) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Token không hợp lệ']);
+                exit;
+            }
+            
+            return $decoded['data']['user_id'] ?? null;
+            
+        } catch (Exception $e) {
+            http_response_code(401);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Token lỗi: ' . $e->getMessage()
+            ]);
+            exit;
+        }
     }
 
-    public function getReviewsByProduct($productId) {
-        $query = "SELECT r.*, a.username, a.fullname 
-                 FROM {$this->table} r
-                 JOIN account a ON r.account_id = a.id
-                 WHERE r.product_id = :product_id
-                 ORDER BY r.created_at DESC";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':product_id', (int)$productId, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        return $stmt->fetchAll(PDO::FETCH_OBJ);
-    }
+    // Thêm đánh giá
+   public function store($productId) {
+    // ⚠️ Luôn set header JSON đầu tiên
+    header('Content-Type: application/json');
 
-    public function getAverageRating($productId) {
-        $query = "SELECT 
-                    AVG(rating) as average_rating,
-                    COUNT(*) as total_reviews
-                  FROM {$this->table}
-                  WHERE product_id = :product_id";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':product_id', (int)$productId, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        $result = $stmt->fetch(PDO::FETCH_OBJ);
-        
-        return [
-            'average' => $result->average_rating ? round($result->average_rating, 1) : 0,
-            'count' => $result->total_reviews
-        ];
-    }
+    try {
+        $userId = $this->authenticate(); // Middleware sẽ tự exit nếu lỗi
 
-    public function getUserReview($productId, $accountId) {
-        $query = "SELECT r.*, a.username, a.fullname 
-                 FROM {$this->table} r
-                 JOIN account a ON r.account_id = a.id
-                 WHERE r.product_id = :product_id 
-                 AND r.account_id = :account_id
-                 LIMIT 1";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindValue(':product_id', (int)$productId, PDO::PARAM_INT);
-        $stmt->bindValue(':account_id', (int)$accountId, PDO::PARAM_INT);
-        $stmt->execute();
-        
-        return $stmt->fetch(PDO::FETCH_OBJ);
+        // Đọc input
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dữ liệu JSON không hợp lệ']);
+            return;
+        }
+
+        // Thêm review
+        $result = $this->reviewModel->addReview([
+            'product_id' => $productId,
+            'account_id' => $userId,
+            'rating' => (int)$input['rating'],
+            'comment' => $input['comment']
+        ]);
+
+        if ($result) {
+            http_response_code(201);
+            echo json_encode(['success' => true, 'message' => 'Thành công']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi khi thêm đánh giá']);
+        }
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Lỗi server: ' . $e->getMessage()
+        ]);
+    }
+}
+
+    // Lấy danh sách đánh giá
+    public function index($productId) {
+        try {
+            $reviews = $this->reviewModel->getReviewsByProduct($productId);
+            $ratingInfo = $this->reviewModel->getAverageRating($productId);
+            
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'reviews' => $reviews,
+                    'average_rating' => $ratingInfo['average'],
+                    'total_reviews' => $ratingInfo['count']
+                ]
+            ]);
+        } catch(Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
+        }
     }
 }
