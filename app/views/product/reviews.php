@@ -28,11 +28,20 @@ include __DIR__ . '/../shares/header.php';
                         </div>
                         <div>
                             <h5 class="mb-1"><?= htmlspecialchars($product->name) ?></h5>
-                            <div class="text-warning mb-1">
+                            <!-- <div class="text-warning mb-1">
                                 <?= str_repeat('<i class="fas fa-star"></i>', round($ratingInfo['average'])) ?>
                                 <?= str_repeat('<i class="far fa-star"></i>', 5 - round($ratingInfo['average'])) ?>
                                 <span class="ms-2 text-dark">(<?= $ratingInfo['count'] ?> đánh giá)</span>
-                            </div>
+                            </div> -->
+                            <div class="text-warning mb-1">
+    <?php if(isset($ratingInfo)): ?>
+        <?= str_repeat('<i class="fas fa-star"></i>', round($ratingInfo['average'])) ?>
+        <?= str_repeat('<i class="far fa-star"></i>', 5 - round($ratingInfo['average'])) ?>
+        <span class="ms-2 text-dark">(<?= $ratingInfo['count'] ?> đánh giá)</span>
+    <?php else: ?>
+        <span class="text-dark">Chưa có đánh giá</span>
+    <?php endif; ?>
+</div>
                             <p class="text-danger fw-bold mb-0"><?= number_format($product->price, 0, ',', '.') ?>₫</p>
                         </div>
                     </div>
