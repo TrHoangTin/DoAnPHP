@@ -3,6 +3,20 @@
 <div class="container mt-4">
     <h1>Sửa sản phẩm</h1>
     
+    <?php 
+    // Hiển thị thông báo từ session
+    if (SessionHelper::getFlash('error_message')): ?>
+        <div class="alert alert-danger">
+            <?= SessionHelper::getFlash('error_message') ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (SessionHelper::getFlash('success_message')): ?>
+        <div class="alert alert-success">
+            <?= SessionHelper::getFlash('success_message') ?>
+        </div>
+    <?php endif; ?>
+
     <?php if (!empty($errors)): ?>
         <div class="alert alert-danger">
             <ul>
@@ -13,7 +27,7 @@
         </div>
     <?php endif; ?>
 
-    <form action="/webbanhang/product/update" method="POST" enctype="multipart/form-data">
+    <form action="/webbanhang/product/edit/<?= $product->id ?>" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?= $product->id ?>">
         
         <div class="mb-3">
@@ -56,6 +70,7 @@
         </div>
         
         <button type="submit" class="btn btn-primary">Cập nhật</button>
+        <a href="/webbanhang/product" class="btn btn-secondary">Quay lại</a>
     </form>
 </div>
 

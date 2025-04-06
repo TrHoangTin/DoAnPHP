@@ -1,43 +1,50 @@
 <?php 
-$title = "Đánh giá sản phẩm";
+$title = "Đánh giá sản phẩm: " . htmlspecialchars($product->name);
 include __DIR__ . '/../shares/header.php'; 
 ?>
 
 <div class="container py-5">
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Đánh giá sản phẩm</h2>
-                <a href="/webbanhang/product/show/<?= $productId ?>" class="btn btn-outline-primary">
-                    <i class="fas fa-arrow-left me-2"></i>Quay lại sản phẩm
-                </a>
-            </div>
-            
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/webbanhang">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="/webbanhang/product">Sản phẩm</a></li>
+                    <li class="breadcrumb-item"><a href="/webbanhang/product/show/<?= $product->id ?>"><?= htmlspecialchars($product->name) ?></a></li>
+                    <li class="breadcrumb-item active">Đánh giá</li>
+                </ol>
+            </nav>
+
+            <!-- Thông tin sản phẩm -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
+                    <div class="d-flex align-items-center">
                         <div class="me-3">
-                            <img src="<?= $product->image ? '/webbanhang/public/uploads/'.$product->image : '/webbanhang/public/images/no-image.jpg' ?>" 
-                                 class="rounded" 
-                                 width="80"
-                                 alt="<?= htmlspecialchars($product->name) ?>">
+                            <img src="<?= !empty($product->image) ? '/webbanhang/' . ltrim($product->image, '/') : '/webbanhang/public/images/no-image.jpg' ?>" 
+                                 width="80" 
+                                 alt="<?= htmlspecialchars($product->name) ?>"
+                                 class="rounded border">
                         </div>
                         <div>
                             <h5 class="mb-1"><?= htmlspecialchars($product->name) ?></h5>
                             <div class="text-warning mb-1">
-                                <?php for ($i = 1; $i <= 5; $i++): ?>
-                                    <i class="fas fa-star<?= $i <= $averageRating ? '' : '-empty' ?>"></i>
-                                <?php endfor; ?>
-                                <span class="ms-2 text-dark">(<?= $reviewCount ?> đánh giá)</span>
+                                <?= str_repeat('<i class="fas fa-star"></i>', round($ratingInfo['average'])) ?>
+                                <?= str_repeat('<i class="far fa-star"></i>', 5 - round($ratingInfo['average'])) ?>
+                                <span class="ms-2 text-dark">(<?= $ratingInfo['count'] ?> đánh giá)</span>
                             </div>
                             <p class="text-danger fw-bold mb-0"><?= number_format($product->price, 0, ',', '.') ?>₫</p>
                         </div>
                     </div>
-                    
-                    <?php if (SessionHelper::isLoggedIn()): ?>
-                        <form id="reviewForm" class="mt-4">
-                            <h5 class="mb-3">Viết đánh giá của bạn</h5>
-                            
+                </div>
+            </div>
+
+            <!-- Form đánh giá -->
+            <?php if (SessionHelper::isLoggedIn() && !$userReview): ?>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Viết đánh giá của bạn</h5>
+                        <form id="reviewForm" method="POST" action="/webbanhang/api/products/<?= $product->id ?>/reviews">
                             <div class="mb-3">
                                 <label class="form-label">Đánh giá</label>
                                 <div class="rating-stars">
@@ -49,28 +56,35 @@ include __DIR__ . '/../shares/header.php';
                             </div>
                             
                             <div class="mb-3">
-                                <label for="comment" class="form-label">Nhận xét</label>
+                                <label for="comment" class="form-label">Nhận xét chi tiết</label>
                                 <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
                             </div>
                             
                             <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
                         </form>
-                    <?php else: ?>
-                        <div class="alert alert-info">
-                            Vui lòng <a href="/webbanhang/account/login">đăng nhập</a> để đánh giá sản phẩm
-                        </div>
-                    <?php endif; ?>
+                    </div>
                 </div>
-            </div>
-            
+            <?php elseif ($userReview): ?>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Bạn đã đánh giá sản phẩm này <?= $userReview->rating ?> sao
+                </div>
+            <?php else: ?>
+                <div class="alert alert-info">
+                    <a href="/webbanhang/account/login?return=<?= urlencode($_SERVER['REQUEST_URI']) ?>" class="btn btn-primary btn-sm">
+                        <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập để đánh giá
+                    </a>
+                </div>
+            <?php endif; ?>
+
+            <!-- Danh sách đánh giá -->
             <div class="reviews-list">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="mb-0">Đánh giá từ khách hàng</h4>
+                    <h4 class="mb-0">Tất cả đánh giá</h4>
                     <div class="text-warning">
-                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                            <i class="fas fa-star<?= $i <= round($averageRating) ? '' : '-empty' ?>"></i>
-                        <?php endfor; ?>
-                        <span class="text-dark ms-2"><?= number_format($averageRating, 1) ?> trên 5 (<?= $reviewCount ?> đánh giá)</span>
+                        <?= str_repeat('<i class="fas fa-star"></i>', round($ratingInfo['average'])) ?>
+                        <?= str_repeat('<i class="far fa-star"></i>', 5 - round($ratingInfo['average'])) ?>
+                        <span class="text-dark ms-2"><?= number_format($ratingInfo['average'], 1) ?> trên 5 (<?= $ratingInfo['count'] ?> đánh giá)</span>
                     </div>
                 </div>
                 
@@ -84,9 +98,8 @@ include __DIR__ . '/../shares/header.php';
                                     <div>
                                         <strong><?= htmlspecialchars($review->fullname ?? $review->username) ?></strong>
                                         <div class="text-warning">
-                                            <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                <i class="fas fa-star<?= $i <= $review->rating ? '' : '-empty' ?>"></i>
-                                            <?php endfor; ?>
+                                            <?= str_repeat('<i class="fas fa-star"></i>', $review->rating) ?>
+                                            <?= str_repeat('<i class="far fa-star"></i>', 5 - $review->rating) ?>
                                         </div>
                                     </div>
                                     <small class="text-muted"><?= date('d/m/Y H:i', strtotime($review->created_at)) ?></small>
@@ -102,59 +115,55 @@ include __DIR__ . '/../shares/header.php';
 </div>
 
 <script>
-async function submitReview() {
-    try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) {
-            window.location.href = '/webbanhang/account/login';
-            return;
-        }
-
-        const response = await fetch(`/api/products/<?= $product->id ?>/reviews`, {
+$(document).ready(function() {
+    // Xử lý form đánh giá bằng AJAX
+    $('#reviewForm').submit(function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            rating: $('input[name="rating"]:checked').val(),
+            comment: $('#comment').val()
+        };
+        
+        $.ajax({
+            url: $(this).attr('action'),
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json' // Yêu cầu server chỉ trả về JSON
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert(response.message || 'Có lỗi xảy ra');
+                }
             },
-            body: JSON.stringify({
-                rating: $('input[name="rating"]:checked').val(),
-                comment: $('#comment').val()
-            })
-        });
-
-        // 🔥 Quan trọng: Kiểm tra Content-Type trước khi parse JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const errorText = await response.text();
-            throw new Error(`Server trả về HTML thay vì JSON: ${errorText.substring(0, 100)}`);
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                localStorage.removeItem('auth_token');
-                window.location.href = '/webbanhang/account/login';
-                return;
+            error: function() {
+                alert('Có lỗi xảy ra khi gửi đánh giá');
             }
-            throw new Error(data.message || 'Lỗi từ server');
-        }
-
-        toastr.success('Đánh giá thành công!');
-        setTimeout(() => location.reload(), 1500);
-
-    } catch (error) {
-        console.error('Lỗi khi gửi đánh giá:', error);
-        toastr.error(error.message || 'Lỗi không xác định');
-    }
-}
-
-// Gắn sự kiện submit
-$('#reviewForm').submit((e) => {
-    e.preventDefault();
-    submitReview();
+        });
+    });
 });
 </script>
+
+<style>
+.rating-stars {
+    direction: rtl;
+    unicode-bidi: bidi-override;
+    display: inline-block;
+}
+.rating-stars input {
+    display: none;
+}
+.rating-stars label {
+    font-size: 24px;
+    color: #ddd;
+    cursor: pointer;
+    margin-right: 5px;
+}
+.rating-stars input:checked ~ label,
+.rating-stars label:hover,
+.rating-stars label:hover ~ label {
+    color: #ffc107;
+}
+</style>
 
 <?php include __DIR__ . '/../shares/footer.php'; ?>

@@ -7,6 +7,82 @@ class ProductModel {
         $this->conn = $db;
     }
 
+    public function addProduct($data) {
+        $query = "INSERT INTO {$this->table} 
+                  (name, description, price, category_id, image, created_at, updated_at) 
+                  VALUES 
+                  (:name, :description, :price, :category_id, :image, NOW(), NOW())";
+        
+        $stmt = $this->conn->prepare($query);
+        
+        return $stmt->execute([
+            ':name' => $data['name'],
+            ':description' => $data['description'],
+            ':price' => $data['price'],
+            ':category_id' => $data['category_id'],
+            ':image' => $data['image']
+        ]);
+    }
+
+    public function deleteProduct($id) {
+        // Lấy thông tin sản phẩm trước để kiểm tra ảnh
+        $product = $this->getProductById($id);
+        if ($product && !empty($product->image)) {
+            $imagePath = __DIR__ . '/../../public' . parse_url($product->image, PHP_URL_PATH);
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+    
+        // Xóa sản phẩm từ database
+        $query = "DELETE FROM {$this->table} WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$id]);
+    }
+    // Thêm vào ProductModel.php
+// public function updateProduct($id, $data) {
+//     $query = "UPDATE {$this->table} SET 
+//                 name = :name,
+//                 description = :description,
+//                 price = :price,
+//                 category_id = :category_id,
+//                 image = :image,
+//                 updated_at = NOW()
+//               WHERE id = :id";
+    
+//     $stmt = $this->conn->prepare($query);
+    
+//     return $stmt->execute([
+//         ':name' => $data['name'],
+//         ':description' => $data['description'],
+//         ':price' => $data['price'],
+//         ':category_id' => $data['category_id'],
+//         ':image' => $data['image'],
+//         ':id' => $id
+//     ]);
+// }
+public function updateProduct($id, $data) {
+    $query = "UPDATE {$this->table} SET 
+                name = :name,
+                description = :description,
+                price = :price,
+                category_id = :category_id,
+                image = :image,
+                updated_at = NOW()
+              WHERE id = :id";
+    
+    $stmt = $this->conn->prepare($query);
+    
+    return $stmt->execute([
+        ':name' => $data['name'],
+        ':description' => $data['description'],
+        ':price' => $data['price'],
+        ':category_id' => $data['category_id'],
+        ':image' => $data['image'],
+        ':id' => $id
+    ]);
+}
+
     // Phương thức lấy sản phẩm theo ID
     public function getProductById($id) {
         $query = "SELECT p.*, c.name as category_name 

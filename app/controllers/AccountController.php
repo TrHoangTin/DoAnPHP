@@ -44,6 +44,7 @@ class AccountController {
 
         require_once __DIR__ . '/../views/account/login.php';
     }
+   
 
     public function register() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

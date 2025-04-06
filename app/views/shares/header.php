@@ -87,14 +87,14 @@
                 </ul>
                 
                 <!-- Search Form -->
-                <form class="d-flex ms-lg-3 mt-2 mt-lg-0" action="/webbanhang/product" method="get">
+                <!-- <form class="d-flex ms-lg-3 mt-2 mt-lg-0" action="/webbanhang/product" method="get">
                     <div class="input-group">
                         <input type="text" class="form-control" name="search" placeholder="Tìm sản phẩm..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
                         <button class="btn btn-light" type="submit">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
-                </form>
+                </form> -->
             </div>
         </div>
     </nav>

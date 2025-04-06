@@ -91,7 +91,7 @@
             </table>
 
             <div class="d-flex justify-content-between">
-                <a href="/webbanhang/product" class="btn btn-outline-primary">
+                <a href="/webbanhang" class="btn btn-outline-primary">
                     <i class="fas fa-arrow-left"></i> Tiếp tục mua sắm
                 </a>
                 <div class="d-flex gap-2">

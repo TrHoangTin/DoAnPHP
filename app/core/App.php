@@ -6,174 +6,215 @@ class App {
     protected $controller = 'HomeController';
     protected $method = 'index';
     protected $params = [];
+    protected $routes = [];
 
     public function __construct() {
         try {
+            // Bật debug trong môi trường development
+            $this->setupDebugging();
+
+            // Đăng ký các routes
+            $this->registerRoutes();
+
+            // Xử lý request
             $url = $this->parseUrl();
+            $this->handleRequest($url);
 
-            // 1. Xử lý API routes trước
-            if ($this->isApiRequest($url)) {
-                $this->handleApiRequest($url);
-                return;
-            }
-
-            // 2. Xử lý routes thông thường
-            $this->handleWebRequest($url);
-
-        } catch (Exception $e) {
-            $this->handleError(500, 'Lỗi server: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            $this->handleError($e);
         }
     }
 
     /**
-     * Phân tích URL từ request
+     * Cấu hình debug
+     */
+    protected function setupDebugging() {
+        if (getenv('APP_ENV') === 'development') {
+            error_reporting(E_ALL);
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+        }
+    }
+
+    /**
+     * Đăng ký các routes
+     */
+    protected function registerRoutes() {
+        // API Routes
+        $this->routes['api'] = [
+            'products/([0-9]+)/reviews' => [
+                'controller' => 'ProductReviewController',
+                'methods' => [
+                    'GET' => 'index',
+                    'POST' => 'store'
+                ]
+            ]
+        ];
+
+        // Web Routes
+        $this->routes['web'] = [
+            'product/([0-9]+)/reviews' => [
+                'controller' => 'ProductController',
+                'method' => 'reviews'
+            ]
+        ];
+    }
+
+    /**
+     * Phân tích URL
      */
     protected function parseUrl() {
         if (isset($_GET['url'])) {
-            $url = rtrim($_GET['url'], '/');
-            $url = filter_var($url, FILTER_SANITIZE_URL);
-            return explode('/', $url);
+            return explode('/', filter_var(rtrim($_GET['url'], '/'), FILTER_SANITIZE_URL));
         }
         return ['home'];
     }
+    
 
     /**
-     * Kiểm tra có phải request API không
+     * Xử lý request
      */
-    protected function isApiRequest($url) {
-        return isset($url[0]) && $url[0] === 'api';
+    protected function handleRequest($url) {
+        // Kiểm tra API routes trước
+        if ($this->handleApiRoutes($url)) {
+            return;
+        }
+
+        // Xử lý web routes thông thường
+        $this->handleWebRoutes($url);
     }
 
     /**
-     * Xử lý request API
+     * Xử lý API routes
      */
-    protected function handleApiRequest($url) {
-        header('Content-Type: application/json');
+    protected function handleApiRoutes($url) {
+        if (empty($url[0]) || $url[0] !== 'api') {
+            return false;
+        }
 
-        try {
-            // API Product Reviews
-            if ($this->isProductReviewsApi($url)) {
-                $this->processProductReviewsApi($url);
+        header('Content-Type: application/json');
+        array_shift($url); // Bỏ phần 'api'
+
+        foreach ($this->routes['api'] as $pattern => $route) {
+            if (preg_match("@^{$pattern}$@", implode('/', $url), $matches)) {
+                $controllerName = $route['controller'];
+                $controllerFile = __DIR__ . "/../controllers/{$controllerName}.php";
+
+                if (!file_exists($controllerFile)) {
+                    $this->sendJsonResponse(404, ['error' => 'Controller not found']);
+                }
+
+                require_once $controllerFile;
+                $controller = new $controllerName();
+
+                $method = $route['methods'][$_SERVER['REQUEST_METHOD']] ?? null;
+                if (!$method || !method_exists($controller, $method)) {
+                    $this->sendJsonResponse(405, ['error' => 'Method not allowed']);
+                }
+
+                array_shift($matches); // Bỏ phần match toàn bộ
+                call_user_func_array([$controller, $method], $matches);
+                return true;
+            }
+        }
+
+        $this->sendJsonResponse(404, ['error' => 'API endpoint not found']);
+        return true;
+    }
+
+    /**
+     * Xử lý web routes
+     */
+    protected function handleWebRoutes($url) {
+        // Kiểm tra routes đã đăng ký
+        foreach ($this->routes['web'] as $pattern => $route) {
+            if (preg_match("@^{$pattern}$@", implode('/', $url), $matches)) {
+                $controllerName = $route['controller'];
+                $controllerFile = __DIR__ . "/../controllers/{$controllerName}.php";
+
+                if (!file_exists($controllerFile)) {
+                    $this->handleNotFound();
+                }
+
+                require_once $controllerFile;
+                $controller = new $controllerName();
+
+                $method = $route['method'] ?? 'index';
+                if (!method_exists($controller, $method)) {
+                    $this->handleNotFound();
+                }
+
+                array_shift($matches); // Bỏ phần match toàn bộ
+                call_user_func_array([$controller, $method], $matches);
                 return;
             }
-
-            // Thêm các API endpoints khác ở đây...
-
-            // Không tìm thấy API endpoint
-            $this->sendJsonResponse(404, ['success' => false, 'message' => 'API endpoint không tồn tại']);
-
-        } catch (Exception $e) {
-            $this->sendJsonResponse(500, [
-                'success' => false,
-                'message' => 'Lỗi API: ' . $e->getMessage()
-            ]);
         }
-    }
 
-    /**
-     * Kiểm tra có phải API reviews không
-     */
-    protected function isProductReviewsApi($url) {
-        return isset($url[1]) && $url[1] === 'products' 
-            && isset($url[2]) && is_numeric($url[2])
-            && isset($url[3]) && $url[3] === 'reviews';
-    }
-
-    /**
-     * Xử lý API reviews
-     */
-    protected function processProductReviewsApi($url) {
-        require_once __DIR__ . '/../controllers/ProductReviewController.php';
-        $controller = new ProductReviewController();
-        $productId = (int)$url[2];
-
-        switch ($_SERVER['REQUEST_METHOD']) {
-            case 'GET':
-                $controller->index($productId);
-                break;
-            case 'POST':
-                $controller->store($productId);
-                break;
-            default:
-                $this->sendJsonResponse(405, [
-                    'success' => false,
-                    'message' => 'Phương thức không được hỗ trợ'
-                ]);
-        }
-    }
-
-    /**
-     * Xử lý request web thông thường
-     */
-    protected function handleWebRequest($url) {
-        // Xác định controller
+        // Xử lý controller/method thông thường
         if (isset($url[0])) {
             $controllerName = ucfirst($url[0]) . 'Controller';
-            $controllerFile = __DIR__ . '/../controllers/' . $controllerName . '.php';
+            $controllerFile = __DIR__ . "/../controllers/{$controllerName}.php";
 
             if (file_exists($controllerFile)) {
                 $this->controller = $controllerName;
                 unset($url[0]);
-            } else {
-                $this->handleNotFound();
-                return;
             }
         }
 
-        // Khởi tạo controller
-        require_once __DIR__ . '/../controllers/' . $this->controller . '.php';
+        require_once __DIR__ . "/../controllers/{$this->controller}.php";
         $this->controller = new $this->controller;
 
-        // Xác định method
         if (isset($url[1])) {
             if (method_exists($this->controller, $url[1])) {
                 $this->method = $url[1];
                 unset($url[1]);
-            } else {
-                $this->handleNotFound();
-                return;
             }
         }
 
-        // Xử lý params
         $this->params = $url ? array_values($url) : [];
-
-        // Gọi controller method
         call_user_func_array([$this->controller, $this->method], $this->params);
     }
 
     /**
-     * Trả về response JSON
+     * Xử lý lỗi
+     */
+    protected function handleError(Throwable $e) {
+        error_log($e->getMessage());
+
+        $errorController = $this->getErrorController();
+        if ($e instanceof NotFoundException) {
+            $errorController->notFound();
+        } else {
+            $errorController->error(500, 'Internal Server Error');
+        }
+    }
+
+    /**
+     * Xử lý 404
+     */
+    protected function handleNotFound() {
+        $this->getErrorController()->notFound();
+    }
+
+    /**
+     * Lấy ErrorController
+     */
+    protected function getErrorController() {
+        $errorControllerPath = __DIR__ . '/../controllers/ErrorController.php';
+        if (!file_exists($errorControllerPath)) {
+            die('System is under maintenance');
+        }
+
+        require_once $errorControllerPath;
+        return new ErrorController();
+    }
+
+    /**
+     * Trả về JSON response
      */
     protected function sendJsonResponse($statusCode, $data) {
         http_response_code($statusCode);
         echo json_encode($data);
         exit;
-    }
-
-    /**
-     * Xử lý trang 404
-     */
-    protected function handleNotFound() {
-        require_once __DIR__ . '/../controllers/ErrorController.php';
-        $controller = new ErrorController();
-        $controller->notFound();
-        exit;
-    }
-
-    /**
-     * Xử lý lỗi chung
-     */
-    protected function handleError($statusCode, $message) {
-        if ($this->isApiRequest($this->parseUrl())) {
-            $this->sendJsonResponse($statusCode, [
-                'success' => false,
-                'message' => $message
-            ]);
-        } else {
-            require_once __DIR__ . '/../controllers/ErrorController.php';
-            $controller = new ErrorController();
-            $controller->error($statusCode, $message);
-        }
     }
 }
