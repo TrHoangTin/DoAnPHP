@@ -70,4 +70,72 @@ class OrderModel {
         $stmt->execute([$order_id]);
         return $stmt->fetch();
     }
+
+    // Add these methods to your existing OrderModel class
+
+public function getOrderCount() {
+    $query = "SELECT COUNT(*) as count FROM {$this->orderTable}";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetch()->count;
+}
+
+public function getRevenueStats() {
+    $query = "SELECT 
+                SUM(total) as total_revenue,
+                COUNT(*) as total_orders,
+                AVG(total) as avg_order_value
+              FROM {$this->orderTable}
+              WHERE status = 'completed'";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetch();
+}
+
+public function getRecentOrders($limit = 5) {
+    $query = "SELECT o.*, a.username 
+              FROM {$this->orderTable} o
+              JOIN account a ON o.account_id = a.id
+              ORDER BY o.created_at DESC 
+              LIMIT ?";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$limit]);
+    return $stmt->fetchAll();
+}
+
+public function getAllOrders() {
+    $query = "SELECT o.*, a.username 
+              FROM orders o
+              LEFT JOIN account a ON o.account_id = a.id
+              ORDER BY o.created_at DESC";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+public function getRevenueReport($range = 'month') {
+    switch ($range) {
+        case 'day':
+            $format = '%Y-%m-%d';
+            break;
+        case 'year':
+            $format = '%Y';
+            break;
+        default:
+            $format = '%Y-%m';
+    }
+    
+    $query = "SELECT 
+                DATE_FORMAT(created_at, ?) as period,
+                COUNT(*) as order_count,
+                SUM(total) as total_revenue
+              FROM {$this->orderTable}
+              WHERE status = 'completed'
+              GROUP BY period
+              ORDER BY period";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$format]);
+    return $stmt->fetchAll();
+}
 }   

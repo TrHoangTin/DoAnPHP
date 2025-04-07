@@ -1,3 +1,5 @@
+<IfModule mod_rewrite.c>
+
 RewriteEngine On
 RewriteBase /webbanhang/
 
@@ -9,7 +11,12 @@ RewriteRule (.*) public/$1 [L]
 # Bỏ qua các request bắt đầu bằng /api/
 RewriteRule ^api/ - [L]
 
+# Redirect Trailing Slashes...
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
 # Các rewrite rules khác
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [L,QSA]
+
+</IfModule>

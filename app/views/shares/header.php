@@ -6,6 +6,7 @@
     <title><?= htmlspecialchars($title ?? 'TechShop') ?></title>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="/webbanhang/public/css/admin.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <!-- Bootstrap 5 CSS -->

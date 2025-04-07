@@ -138,5 +138,22 @@ public function updateProduct($id, $data) {
             'total' => $total
         ];
     }
+
+    public function getProductCount() {
+        $query = "SELECT COUNT(*) as count FROM {$this->table}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetch()->count;
+    }
+    
+    public function getAllProducts() {
+        $query = "SELECT p.*, c.name as category_name 
+                  FROM {$this->table} p
+                  LEFT JOIN category c ON p.category_id = c.id
+                  ORDER BY p.created_at DESC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }
 

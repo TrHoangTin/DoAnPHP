@@ -40,22 +40,48 @@ class App {
      * Đăng ký các routes
      */
     protected function registerRoutes() {
-        // API Routes
-        $this->routes['api'] = [
-            'products/([0-9]+)/reviews' => [
-                'controller' => 'ProductReviewController',
-                'methods' => [
-                    'GET' => 'index',
-                    'POST' => 'store'
+        $this->routes = [
+            'api' => [
+                'products/([0-9]+)/reviews' => [
+                    'controller' => 'ProductReviewController',
+                    'methods' => [
+                        'GET' => 'index',
+                        'POST' => 'store'
+                    ]
                 ]
-            ]
-        ];
+            ],
+            'web' => [
+                // Home & Auth
+                '' => ['controller' => 'HomeController', 'method' => 'index'],
+                'home' => ['controller' => 'HomeController', 'method' => 'index'],
+                'account/login' => ['controller' => 'AccountController', 'method' => 'login'],
+                'account/register' => ['controller' => 'AccountController', 'method' => 'register'],
+                'account/logout' => ['controller' => 'AccountController', 'method' => 'logout'],
 
-        // Web Routes
-        $this->routes['web'] = [
-            'product/([0-9]+)/reviews' => [
-                'controller' => 'ProductController',
-                'method' => 'reviews'
+                // Product routes
+                'product' => ['controller' => 'ProductController', 'method' => 'index'],
+                'product/([0-9]+)' => ['controller' => 'ProductController', 'method' => 'show'],
+                'product/show/([0-9]+)' => ['controller' => 'ProductController', 'method' => 'show'],
+                'product/([0-9]+)/reviews' => ['controller' => 'ProductController', 'method' => 'reviews'],
+                'product/add' => ['controller' => 'ProductController', 'method' => 'add'],
+                'product/edit/([0-9]+)' => ['controller' => 'ProductController', 'method' => 'edit'],
+                'product/delete/([0-9]+)' => ['controller' => 'ProductController', 'method' => 'delete'],
+
+                // Cart routes
+                'cart' => ['controller' => 'CartController', 'method' => 'index'],
+                'cart/add/([0-9]+)' => ['controller' => 'CartController', 'method' => 'add'],
+                'cart/remove/([0-9]+)' => ['controller' => 'CartController', 'method' => 'remove'],
+                'cart/update' => ['controller' => 'CartController', 'method' => 'update'],
+                'cart/checkout' => ['controller' => 'CartController', 'method' => 'checkout'],
+
+                // Admin routes
+                'admin' => ['controller' => 'AdminController', 'method' => 'dashboard'],
+                'admin/users' => ['controller' => 'AdminController', 'method' => 'users'],
+                'admin/products' => ['controller' => 'AdminController', 'method' => 'products'],
+                'admin/orders' => ['controller' => 'AdminController', 'method' => 'orders'],
+                'admin/categories' => ['controller' => 'AdminController', 'method' => 'categories'],
+                'admin/([a-z0-9-]+)' => ['controller' => 'AdminController', 'method' => '$1'],
+                'admin/([a-z]+)/([0-9]+)' => ['controller' => 'AdminController', 'method' => '$1Detail'],
             ]
         ];
     }
@@ -69,7 +95,6 @@ class App {
         }
         return ['home'];
     }
-    
 
     /**
      * Xử lý request
@@ -126,9 +151,11 @@ class App {
      * Xử lý web routes
      */
     protected function handleWebRoutes($url) {
+        $urlPath = implode('/', $url);
+
         // Kiểm tra routes đã đăng ký
         foreach ($this->routes['web'] as $pattern => $route) {
-            if (preg_match("@^{$pattern}$@", implode('/', $url), $matches)) {
+            if (preg_match("@^{$pattern}$@", $urlPath, $matches)) {
                 $controllerName = $route['controller'];
                 $controllerFile = __DIR__ . "/../controllers/{$controllerName}.php";
 
@@ -140,6 +167,14 @@ class App {
                 $controller = new $controllerName();
 
                 $method = $route['method'] ?? 'index';
+                
+                // Xử lý dynamic method name (như $1, $2)
+                if (strpos($method, '$') !== false) {
+                    $method = preg_replace_callback('/\$(\d+)/', function($m) use ($matches) {
+                        return $matches[$m[1]] ?? '';
+                    }, $method);
+                }
+
                 if (!method_exists($controller, $method)) {
                     $this->handleNotFound();
                 }

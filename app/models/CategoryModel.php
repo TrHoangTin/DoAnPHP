@@ -53,4 +53,10 @@ class CategoryModel {
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$id]);
     }
+    public function getCategoryCount() {
+        $query = "SELECT COUNT(*) as count FROM {$this->table}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetch()->count;
+    }
 }

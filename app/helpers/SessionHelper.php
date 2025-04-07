@@ -3,7 +3,10 @@ class SessionHelper {
     public static function startSession() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start([
-                'cookie_lifetime' => 86400, // 1 ngày
+                'name' => 'WEBSHOP_SESS',
+                'cookie_lifetime' => 86400,
+                'cookie_path' => '/',
+                'cookie_domain' => $_SERVER['HTTP_HOST'],
                 'cookie_secure' => isset($_SERVER['HTTPS']),
                 'cookie_httponly' => true,
                 'use_strict_mode' => true
@@ -18,7 +21,7 @@ class SessionHelper {
 
     public static function isAdmin() {
         self::startSession();
-        return isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
+        return ($_SESSION['role'] ?? '') === 'admin';
     }
 
     public static function getUserId() {
