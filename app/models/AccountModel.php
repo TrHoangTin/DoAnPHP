@@ -126,4 +126,38 @@ public function updateUserRole($id, $role, $status) {
         
         return $stmt->execute([$hashed_password, $id]);
     }
+
+    // Thêm vào AccountModel.php
+public function getAccountByEmail($email) {
+    $query = "SELECT * FROM {$this->table} WHERE email = ? LIMIT 1";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$email]);
+    return $stmt->fetch();
+}
+
+public function createPasswordResetToken($email, $token, $expiry) {
+    $query = "UPDATE {$this->table} 
+             SET reset_token = ?, reset_token_expiry = ?
+             WHERE email = ?";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute([$token, $expiry, $email]);
+}
+
+public function getAccountByResetToken($token) {
+    $query = "SELECT * FROM {$this->table} 
+             WHERE reset_token = ? AND reset_token_expiry > NOW() LIMIT 1";
+    $stmt = $this->conn->prepare($query);
+    $stmt->execute([$token]);
+    return $stmt->fetch();
+}
+
+public function resetPassword($token, $new_password) {
+    $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+    
+    $query = "UPDATE {$this->table} 
+             SET password = ?, reset_token = NULL, reset_token_expiry = NULL
+             WHERE reset_token = ?";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute([$hashed_password, $token]);
+}
 }

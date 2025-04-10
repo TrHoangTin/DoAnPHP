@@ -57,6 +57,9 @@ class App {
                 'account/login' => ['controller' => 'AccountController', 'method' => 'login'],
                 'account/register' => ['controller' => 'AccountController', 'method' => 'register'],
                 'account/logout' => ['controller' => 'AccountController', 'method' => 'logout'],
+                'account/forgot-password' => ['controller' => 'AccountController', 'method' => 'forgotPassword'],
+                'account/verify-otp' => ['controller' => 'AccountController', 'method' => 'verifyOtp'],
+                'account/reset-password' => ['controller' => 'AccountController', 'method' => 'resetPassword'],
 
                 // Product routes
                 'product' => ['controller' => 'ProductController', 'method' => 'index'],

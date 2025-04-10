@@ -231,6 +231,10 @@
                 <p>Chưa có tài khoản? 
                     <a href="/webbanhang/Account/register" class="register-link">Đăng ký ngay</a>
                 </p>
+
+                <p>
+                    <a href="/webbanhang/account/forgot-password" class="register-link">Quên mật khẩu?</a>
+                </p>
             </div>
         </div>
     </div>

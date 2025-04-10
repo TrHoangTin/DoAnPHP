@@ -2,7 +2,8 @@
 require_once __DIR__ . '/../models/AccountModel.php';
 require_once __DIR__ . '/../helpers/SessionHelper.php';
 require_once __DIR__ . '/../utils/JWTHandler.php';
-
+require_once __DIR__ . '/../helpers/EmailHelper.php';
+date_default_timezone_set('Asia/Ho_Chi_Minh'); 
 class AccountController {
     private $accountModel;
     private $jwtHandler;
@@ -169,5 +170,114 @@ class AccountController {
         $orderDetails = $orderModel->getOrderDetails($order_id);
     
         require_once __DIR__ . '/../views/account/orderdetail.php';
+    }
+
+    public function forgotPassword() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = $_POST['email'] ?? '';
+            
+            if (empty($email)) {
+                SessionHelper::setFlash('error_message', 'Vui lòng nhập email');
+                header('Location: /webbanhang/account/forgot-password');
+                exit();
+            }
+            
+            $account = $this->accountModel->getAccountByEmail($email);
+            
+            if (!$account) {
+                SessionHelper::setFlash('error_message', 'Email không tồn tại trong hệ thống');
+                header('Location: /webbanhang/account/forgot-password');
+                exit();
+            }
+            
+            // Tạo mã OTP 6 chữ số
+            $otp = rand(100000, 999999);
+            $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
+            
+            // Lưu OTP vào database
+            $this->accountModel->createPasswordResetToken($email, $otp, $expiry);
+            
+            // Gửi email
+            $emailHelper = new EmailHelper();
+            if ($emailHelper->sendOTP($email, $otp)) {
+                SessionHelper::setFlash('success_message', 'Mã OTP đã được gửi đến email của bạn');
+                $_SESSION['reset_email'] = $email;
+                header('Location: /webbanhang/account/verify-otp');
+                exit();
+            } else {
+                SessionHelper::setFlash('error_message', 'Gửi email thất bại. Vui lòng thử lại');
+                header('Location: /webbanhang/account/forgot-password');
+                exit();
+            }
+        }
+        
+        require_once __DIR__ . '/../views/account/forgot-password.php';
+    }
+
+    public function verifyOtp() {
+        if (!isset($_SESSION['reset_email'])) {
+            SessionHelper::setFlash('error_message', 'Vui lòng yêu cầu mã OTP trước');
+            header('Location: /webbanhang/account/forgot-password');
+            exit();
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $otp = $_POST['otp'] ?? '';
+            $email = $_SESSION['reset_email'];
+            
+            $account = $this->accountModel->getAccountByResetToken($otp);
+            
+            if ($account && $account->email === $email) {
+                $_SESSION['reset_token'] = $otp;
+                header('Location: /webbanhang/account/reset-password');
+                exit();
+            } else {
+                SessionHelper::setFlash('error_message', 'Mã OTP không hợp lệ hoặc đã hết hạn');
+                header('Location: /webbanhang/account/verify-otp');
+                exit();
+            }
+        }
+        
+        require_once __DIR__ . '/../views/account/verify-otp.php';
+    }
+    
+    public function resetPassword() {
+        if (!isset($_SESSION['reset_token'])) {
+            SessionHelper::setFlash('error_message', 'Vui lòng xác thực OTP trước');
+            header('Location: /webbanhang/account/forgot-password');
+            exit();
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $new_password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+            
+            if (empty($new_password) || empty($confirm_password)) {
+                SessionHelper::setFlash('error_message', 'Vui lòng nhập đầy đủ thông tin');
+                header('Location: /webbanhang/account/reset-password');
+                exit();
+            }
+            
+            if ($new_password !== $confirm_password) {
+                SessionHelper::setFlash('error_message', 'Mật khẩu không khớp');
+                header('Location: /webbanhang/account/reset-password');
+                exit();
+            }
+            
+            $token = $_SESSION['reset_token'];
+            if ($this->accountModel->resetPassword($token, $new_password)) {
+                unset($_SESSION['reset_token']);
+                unset($_SESSION['reset_email']);
+                SessionHelper::setFlash('success_message', 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập');
+                header('Location: /webbanhang/account/login');
+                exit();
+            } else {
+                SessionHelper::setFlash('error_message', 'Đặt lại mật khẩu thất bại. Vui lòng thử lại');
+                header('Location: /webbanhang/account/reset-password');
+                exit();
+            }
+        }
+        
+        require_once __DIR__ . '/../views/account/reset-password.php';
     }
 }

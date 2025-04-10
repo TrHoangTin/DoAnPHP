@@ -41,6 +41,19 @@
     </section>
     <?php endif; ?>
 
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <?php for ($i = 1; $i <= max($totalPagesFeatured, $totalPagesNew); $i++): ?>
+                <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                    <a class="page-link" href="/webbanhang?page=<?= $i ?>&search=<?= htmlspecialchars($search ?? '', ENT_QUOTES) ?>">
+                        <?= $i ?>
+                    </a>
+                </li>
+            <?php endfor; ?>
+        </ul>
+    </nav>
+</div>
+
     <!-- Hiển thị sản phẩm mới -->
     <?php if (!empty($newProducts)): ?>
     <section class="mb-5">
