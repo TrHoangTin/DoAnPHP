@@ -76,10 +76,34 @@ public function updateUserRole($id, $role, $status) {
         ]);
     }
 
-    public function createAccount($username, $password, $fullname, $email = null, $phone = null, $address = null) {
+    // public function createAccount($username, $password, $fullname, $email = null, $phone = null, $address = null) {
+    //     $query = "INSERT INTO {$this->table} 
+    //              (username, password, fullname, email, phone, address) 
+    //              VALUES (?, ?, ?, ?, ?, ?)";
+    //     $stmt = $this->conn->prepare($query);
+        
+    //     $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        
+    //     return $stmt->execute([
+    //         $username,
+    //         $hashed_password,
+    //         $fullname,
+    //         $email,
+    //         $phone,
+    //         $address
+    //     ]);
+    // }
+    public function getAccountByEmail($email) {
+        $query = "SELECT * FROM {$this->table} WHERE email = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$email]);
+        return $stmt->fetch();
+    }
+    
+    public function createAccount($username, $password, $fullname, $email = null, $phone = null, $address = null, $provider = null, $provider_id = null) {
         $query = "INSERT INTO {$this->table} 
-                 (username, password, fullname, email, phone, address) 
-                 VALUES (?, ?, ?, ?, ?, ?)";
+                 (username, password, fullname, email, phone, address, provider, provider_id) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
         
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
@@ -90,10 +114,11 @@ public function updateUserRole($id, $role, $status) {
             $fullname,
             $email,
             $phone,
-            $address
+            $address,
+            $provider,
+            $provider_id
         ]);
     }
-
     public function updateAccount($id, $data) {
         $query = "UPDATE {$this->table} 
                  SET fullname = ?, email = ?, phone = ?, address = ?, updated_at = NOW()
@@ -127,13 +152,19 @@ public function updateUserRole($id, $role, $status) {
         return $stmt->execute([$hashed_password, $id]);
     }
 
+    public function getAccountById($id) {
+        return $this->getUserById($id);
+    }
+
     // Thêm vào AccountModel.php
-public function getAccountByEmail($email) {
-    $query = "SELECT * FROM {$this->table} WHERE email = ? LIMIT 1";
-    $stmt = $this->conn->prepare($query);
-    $stmt->execute([$email]);
-    return $stmt->fetch();
-}
+// public function getAccountByEmail($email) {
+//     $query = "SELECT * FROM {$this->table} WHERE email = ? LIMIT 1";
+//     $stmt = $this->conn->prepare($query);
+//     $stmt->execute([$email]);
+//     return $stmt->fetch();
+// }
+
+
 
 public function createPasswordResetToken($email, $token, $expiry) {
     $query = "UPDATE {$this->table} 
@@ -160,4 +191,5 @@ public function resetPassword($token, $new_password) {
     $stmt = $this->conn->prepare($query);
     return $stmt->execute([$hashed_password, $token]);
 }
+
 }

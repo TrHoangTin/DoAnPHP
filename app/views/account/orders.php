@@ -27,7 +27,6 @@
                             <td><?= htmlspecialchars($order->status ?? 'Đang xử lý') ?></td>
                             <td>
     <?php
-    // Kiểm tra nếu total không phải là null
     $total = isset($order->total) ? $order->total : 0;
     echo number_format($total, 0, ',', '.') . '₫';
     ?>

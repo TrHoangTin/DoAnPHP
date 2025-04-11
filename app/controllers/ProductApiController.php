@@ -13,7 +13,6 @@ class ProductApiController {
         $this->jwtHandler = new JWTHandler();
     }
 
-    // Middleware xác thực JWT và kiểm tra quyền admin
     private function authenticateAdmin() {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';
@@ -34,7 +33,6 @@ class ProductApiController {
         }
     }
 
-    // Middleware xác thực JWT cơ bản
     private function authenticate() {
         $headers = getallheaders();
         $authHeader = $headers['Authorization'] ?? '';
@@ -55,7 +53,6 @@ class ProductApiController {
         }
     }
 
-    // Lấy danh sách sản phẩm (public)
     public function index() {
         try {
             $page = $_GET['page'] ?? 1;
@@ -63,7 +60,6 @@ class ProductApiController {
             $category_id = $_GET['category_id'] ?? null;
             $search = $_GET['search'] ?? null;
 
-            // Validate input
             $page = max(1, (int)$page);
             $limit = max(1, min(100, (int)$limit));
 
@@ -86,7 +82,6 @@ class ProductApiController {
         }
     }
 
-    // Lấy thông tin sản phẩm theo ID (public)
     public function show($id) {
         try {
             $product = $this->productModel->getProductById($id);
@@ -107,7 +102,6 @@ class ProductApiController {
         }
     }
 
-    // Thêm sản phẩm mới (admin only)
     public function store() {
         $this->authenticateAdmin();
         
@@ -120,7 +114,6 @@ class ProductApiController {
                 return;
             }
             
-            // Validate required fields
             $requiredFields = ['name', 'description', 'price', 'category_id'];
             foreach ($requiredFields as $field) {
                 if (empty($data[$field])) {
@@ -130,7 +123,6 @@ class ProductApiController {
                 }
             }
             
-            // Process image if exists (base64 encoded)
             $imagePath = null;
             if (!empty($data['image'])) {
                 $imagePath = $this->processBase64Image($data['image']);
@@ -160,8 +152,6 @@ class ProductApiController {
             echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
         }
     }
-
-    // Cập nhật sản phẩm (admin only)
     public function update($id) {
         $this->authenticateAdmin();
         
@@ -174,7 +164,6 @@ class ProductApiController {
                 return;
             }
             
-            // Get existing product
             $existingProduct = $this->productModel->getProductById($id);
             if (!$existingProduct) {
                 http_response_code(404);
@@ -214,13 +203,10 @@ class ProductApiController {
             echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
         }
     }
-
-    // Xóa sản phẩm (admin only)
     public function destroy($id) {
         $this->authenticateAdmin();
         
         try {
-            // Get product first to delete image
             $product = $this->productModel->getProductById($id);
             if (!$product) {
                 http_response_code(404);
@@ -228,7 +214,6 @@ class ProductApiController {
                 return;
             }
             
-            // Delete image if exists
             if ($product->image && file_exists(__DIR__ . '/../../public/' . $product->image)) {
                 unlink(__DIR__ . '/../../public/' . $product->image);
             }
@@ -249,8 +234,6 @@ class ProductApiController {
             echo json_encode(['success' => false, 'message' => 'Lỗi server: ' . $e->getMessage()]);
         }
     }
-
-    // Xử lý ảnh base64
     private function processBase64Image($base64Image) {
         try {
             $targetDir = __DIR__ . '/../../public/uploads/';
@@ -258,7 +241,6 @@ class ProductApiController {
                 mkdir($targetDir, 0755, true);
             }
             
-            // Extract image type and data
             if (!preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
                 throw new Exception('Định dạng ảnh không hợp lệ');
             }

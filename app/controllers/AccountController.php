@@ -4,6 +4,8 @@ require_once __DIR__ . '/../helpers/SessionHelper.php';
 require_once __DIR__ . '/../utils/JWTHandler.php';
 require_once __DIR__ . '/../helpers/EmailHelper.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh'); 
+require_once __DIR__ . '/../services/OAuthService.php';
+
 class AccountController {
     private $accountModel;
     private $jwtHandler;
@@ -24,7 +26,6 @@ class AccountController {
             if ($account) {
                 SessionHelper::setUser($account);
                 
-                // Tạo JWT token
                 $token = $this->jwtHandler->encode([
                     'id' => $account->id,
                     'username' => $account->username,
@@ -63,7 +64,6 @@ class AccountController {
             if ($password !== $confirm_password) $errors['confirm_password'] = 'Mật khẩu không khớp';
             if (empty($fullname)) $errors['fullname'] = 'Vui lòng nhập họ tên';
 
-            // Kiểm tra username tồn tại
             if ($this->accountModel->getAccountByUsername($username)) {
                 $errors['username'] = 'Tên đăng nhập đã được sử dụng';
             }
@@ -152,21 +152,14 @@ class AccountController {
         if (!SessionHelper::isLoggedIn()) {
             header('Location: /webbanhang/account/login');
             exit();
-        }
-    
+        }    
         $orderModel = new OrderModel((new Database())->getConnection());
-        
-        // Lấy thông tin đơn hàng
-        $order = $orderModel->getOrderById($order_id);
-        
-        // Kiểm tra đơn hàng có thuộc về người dùng hiện tại không
+        $order = $orderModel->getOrderById($order_id);       
         if (!$order || $order->account_id != SessionHelper::getUserId()) {
             SessionHelper::setFlash('error_message', 'Đơn hàng không tồn tại hoặc không thuộc về bạn');
             header('Location: /webbanhang/account/orders');
             exit();
         }
-    
-        // Lấy chi tiết đơn hàng
         $orderDetails = $orderModel->getOrderDetails($order_id);
     
         require_once __DIR__ . '/../views/account/orderdetail.php';
@@ -190,14 +183,11 @@ class AccountController {
                 exit();
             }
             
-            // Tạo mã OTP 6 chữ số
             $otp = rand(100000, 999999);
             $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
             
-            // Lưu OTP vào database
             $this->accountModel->createPasswordResetToken($email, $otp, $expiry);
             
-            // Gửi email
             $emailHelper = new EmailHelper();
             if ($emailHelper->sendOTP($email, $otp)) {
                 SessionHelper::setFlash('success_message', 'Mã OTP đã được gửi đến email của bạn');
@@ -279,5 +269,116 @@ class AccountController {
         }
         
         require_once __DIR__ . '/../views/account/reset-password.php';
+    }
+    public function googleLogin() {
+        $oauthService = new OAuthService();
+        $authUrl = $oauthService->getAuthUrl('google');
+        header('Location: ' . $authUrl);
+        exit();
+    }
+    
+    public function googleCallback() {
+        if (!isset($_GET['code'])) {
+            SessionHelper::setFlash('error_message', 'Đăng nhập bằng Google thất bại');
+            header('Location: /webbanhang/account/login');
+            exit();
+        }   
+      try {
+            $oauthService = new OAuthService();
+            $userInfo = $oauthService->getUser('google', $_GET['code']);           
+            // Kiểm tra và tạo tài khoản nếu chưa có
+            $account = $this->accountModel->getAccountByEmail($userInfo['email']);          
+            if (!$account) {
+                // Tạo tài khoản mới
+                $username = str_replace('@', '_', $userInfo['email']);
+                $password = bin2hex(random_bytes(8)); // Mật khẩu ngẫu nhiên                
+                $this->accountModel->createAccount(
+                    $username,
+                    $password,
+                    $userInfo['name'],
+                    $userInfo['email'],
+                    null,
+                    null,
+                    $userInfo['provider'],
+                    $userInfo['provider_id']
+                );
+                
+                $account = $this->accountModel->getAccountByEmail($userInfo['email']);
+            }  
+            SessionHelper::setUser($account);      
+            $token = $this->jwtHandler->encode([
+                'id' => $account->id,
+                'username' => $account->username,
+                'role' => $account->role
+            ]);
+            
+            $_SESSION['jwt_token'] = $token;
+    
+            SessionHelper::setFlash('success_message', 'Đăng nhập bằng Google thành công');
+            header('Location: /webbanhang/');
+            exit();
+        } catch (Exception $e) {
+            SessionHelper::setFlash('error_message', 'Đăng nhập bằng Google thất bại: ' . $e->getMessage());
+            header('Location: /webbanhang/account/login');
+            exit();
+        }
+    }
+    
+    public function facebookLogin() {
+        $oauthService = new OAuthService();
+        $authUrl = $oauthService->getAuthUrl('facebook');
+        header('Location: ' . $authUrl);
+        exit();
+    }
+    
+    public function facebookCallback() {
+        if (!isset($_GET['code'])) {
+            SessionHelper::setFlash('error_message', 'Đăng nhập bằng Facebook thất bại');
+            header('Location: /webbanhang/account/login');
+            exit();
+        }
+    
+        try {
+            $oauthService = new OAuthService();
+            $userInfo = $oauthService->getUser('facebook', $_GET['code']);
+            
+            $account = $this->accountModel->getAccountByEmail($userInfo['email']);
+            
+            if (!$account) {
+                $username = str_replace('@', '_', $userInfo['email']);
+                $password = bin2hex(random_bytes(8)); // Mật khẩu ngẫu nhiên
+                
+                $this->accountModel->createAccount(
+                    $username,
+                    $password,
+                    $userInfo['name'],
+                    $userInfo['email'],
+                    null,
+                    null,
+                    $userInfo['provider'],
+                    $userInfo['provider_id']
+                );
+                
+                $account = $this->accountModel->getAccountByEmail($userInfo['email']);
+            }
+    
+            SessionHelper::setUser($account);
+            
+            $token = $this->jwtHandler->encode([
+                'id' => $account->id,
+                'username' => $account->username,
+                'role' => $account->role
+            ]);
+            
+            $_SESSION['jwt_token'] = $token;
+    
+            SessionHelper::setFlash('success_message', 'Đăng nhập bằng Facebook thành công');
+            header('Location: /webbanhang/');
+            exit();
+        } catch (Exception $e) {
+            SessionHelper::setFlash('error_message', 'Đăng nhập bằng Facebook thất bại: ' . $e->getMessage());
+            header('Location: /webbanhang/account/login');
+            exit();
+        }
     }
 }

@@ -185,6 +185,37 @@
         from { opacity: 0; }
         to { opacity: 1; }
     }
+
+    .btn-google, .btn-facebook {
+        padding: 10px 20px;
+        border-radius: 15px;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-google {
+        background: #DB4437;
+    }
+    
+    .btn-facebook {
+        background: #3b5998;
+    }
+    
+    .btn-google:hover, .btn-facebook:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        opacity: 0.9;
+    }
+    
+    .social-login {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(0,0,0,0.1);
+    }
 </style>
 
 
@@ -236,6 +267,17 @@
                     <a href="/webbanhang/account/forgot-password" class="register-link">Quên mật khẩu?</a>
                 </p>
             </div>
+            <div class="social-login mt-4">
+    <p class="text-center mb-3">Hoặc đăng nhập bằng</p>
+    <div class="d-flex justify-content-center gap-3">
+        <a href="/webbanhang/account/google-login" class="btn btn-google">
+            <i class="fab fa-google"></i> Google
+        </a>
+        <a href="/webbanhang/account/facebook-login" class="btn btn-facebook">
+            <i class="fab fa-facebook-f"></i> Facebook
+        </a>
+    </div>
+</div>
         </div>
     </div>
 </div>
@@ -243,7 +285,6 @@
 <?php include(__DIR__ . '/../../views/shares/footer.php'); ?>
 
 <script>
-    // Hiệu ứng focus cho input
     document.querySelectorAll('.form-control').forEach(input => {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');

@@ -60,6 +60,10 @@ class App {
                 'account/forgot-password' => ['controller' => 'AccountController', 'method' => 'forgotPassword'],
                 'account/verify-otp' => ['controller' => 'AccountController', 'method' => 'verifyOtp'],
                 'account/reset-password' => ['controller' => 'AccountController', 'method' => 'resetPassword'],
+                'account/google-login' => ['controller' => 'AccountController', 'method' => 'googleLogin'],
+                'account/google-callback' => ['controller' => 'AccountController', 'method' => 'googleCallback'],
+                'account/facebook-login' => ['controller' => 'AccountController', 'method' => 'facebookLogin'],
+                'account/facebook-callback' => ['controller' => 'AccountController', 'method' => 'facebookCallback'],
 
                 // Product routes
                 'product' => ['controller' => 'ProductController', 'method' => 'index'],

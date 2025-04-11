@@ -194,24 +194,6 @@ class ProductController {
         header('Location: /webbanhang/product');
         exit();
     }
-
-    // public function reviews($productId) {
-    //     $product = $this->productModel->getProductById($productId);
-    //     if (!$product) {
-    //         SessionHelper::setFlash('error_message', 'Sản phẩm không tồn tại');
-    //         header('Location: /webbanhang/product');
-    //         exit;
-    //     }
-
-    //     $reviews = $this->reviewModel->getReviewsByProduct($productId);
-    //     $averageRating = $this->reviewModel->getAverageRating($productId);
-    //     $userReview = SessionHelper::isLoggedIn() 
-    //         ? $this->reviewModel->getUserReview($productId, SessionHelper::getUserId())
-    //         : null;
-
-    //     require_once __DIR__ . '/../views/product/reviews.php';
-    // }
-
     public function reviews($productId) {
         $product = $this->productModel->getProductById($productId);
         if (!$product) {
@@ -225,8 +207,6 @@ class ProductController {
         $userReview = SessionHelper::isLoggedIn() 
             ? $this->reviewModel->getUserReview($productId, SessionHelper::getUserId())
             : null;
-    
-        // Đảm bảo truyền đúng các biến vào view
         require_once __DIR__ . '/../views/product/reviews.php';
     }
     private function handleImageUpload() {

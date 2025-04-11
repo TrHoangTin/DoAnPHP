@@ -54,24 +54,18 @@ class ProductReviewController {
             exit;
         }
     }
-
-    // Thêm đánh giá
    public function store($productId) {
-    // ⚠️ Luôn set header JSON đầu tiên
     header('Content-Type: application/json');
 
     try {
-        $userId = $this->authenticate(); // Middleware sẽ tự exit nếu lỗi
+        $userId = $this->authenticate(); 
 
-        // Đọc input
         $input = json_decode(file_get_contents('php://input'), true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Dữ liệu JSON không hợp lệ']);
             return;
         }
-
-        // Thêm review
         $result = $this->reviewModel->addReview([
             'product_id' => $productId,
             'account_id' => $userId,
@@ -96,7 +90,6 @@ class ProductReviewController {
     }
 }
 
-    // Lấy danh sách đánh giá
     public function index($productId) {
         try {
             $reviews = $this->reviewModel->getReviewsByProduct($productId);

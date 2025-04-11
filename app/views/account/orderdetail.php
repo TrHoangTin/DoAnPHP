@@ -32,7 +32,6 @@
                     <?= htmlspecialchars($item->product_name) ?>
                     <?php if (!empty($item->image)): ?>
                         <?php
-                        // Xử lý đường dẫn ảnh
                         $imagePath = (strpos($item->image, '/webbanhang/') === 0) 
                                    ? $item->image 
                                    : '/webbanhang/' . ltrim($item->image, '/');

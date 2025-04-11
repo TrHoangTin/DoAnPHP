@@ -14,20 +14,16 @@ class HomeController {
     }
 
     public function index() {
-        $search = $_GET['search'] ?? ''; // Lấy từ khóa tìm kiếm
-        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Lấy số trang hiện tại
-        $limit = 8; // Mỗi trang sẽ hiển thị 8 sản phẩm
-
-        // Lấy các sản phẩm nổi bật và sản phẩm mới, bao gồm tìm kiếm nếu có
+        $search = $_GET['search'] ?? ''; 
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1; 
+        $limit = 8; 
         $dataFeatured = $this->productModel->getPaginatedProducts($page, $limit, null, $search);
         $dataNew = $this->productModel->getPaginatedProducts($page, $limit, null, $search);
 
-        $featuredProducts = $dataFeatured['products']; // Sản phẩm nổi bật
-        $newProducts = $dataNew['products']; // Sản phẩm mới
-        $totalFeatured = $dataFeatured['total']; // Tổng sản phẩm nổi bật
-        $totalNew = $dataNew['total']; // Tổng sản phẩm mới
-
-        // Tính số trang cho sản phẩm nổi bật và mới
+        $featuredProducts = $dataFeatured['products']; 
+        $newProducts = $dataNew['products'];
+        $totalFeatured = $dataFeatured['total']; 
+        $totalNew = $dataNew['total'];
         $totalPagesFeatured = ceil($totalFeatured / $limit);
         $totalPagesNew = ceil($totalNew / $limit);
 
