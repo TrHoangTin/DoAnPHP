@@ -1,13 +1,11 @@
 <?php
-// File: helpers/EmailHelper.php
 class EmailHelper {
     private $mailer;
 
     public function __construct() {
-        // Cấu hình PHPMailer
+   
         $this->mailer = new PHPMailer\PHPMailer\PHPMailer(true);
-        
-        // Cấu hình SMTP
+
         $this->mailer->isSMTP();
         $this->mailer->Host = 'smtp.gmail.com';
         $this->mailer->SMTPAuth = true;
